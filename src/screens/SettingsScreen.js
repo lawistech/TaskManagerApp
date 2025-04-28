@@ -1,16 +1,21 @@
 import React from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, List, Switch, Divider } from 'react-native-paper';
+import { useSelector } from 'react-redux';
+import { selectPendingChanges, selectIsOnline } from '../redux/slices/syncSlice';
+import SyncStatusIndicator from '../components/SyncStatusIndicator';
 
-const SettingsScreen = () => {
+const SettingsScreen = ({ navigation }) => {
   const [darkMode, setDarkMode] = React.useState(false);
   const [notifications, setNotifications] = React.useState(true);
   const [syncOnCellular, setSyncOnCellular] = React.useState(false);
-  
+  const pendingChanges = useSelector(selectPendingChanges);
+  const isOnline = useSelector(selectIsOnline);
+
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Settings</Text>
-      
+
       <ScrollView>
         <List.Section>
           <List.Subheader>Appearance</List.Subheader>
@@ -20,7 +25,7 @@ const SettingsScreen = () => {
             right={() => <Switch value={darkMode} onValueChange={setDarkMode} />}
           />
           <Divider />
-          
+
           <List.Subheader>Notifications</List.Subheader>
           <List.Item
             title="Enable Notifications"
@@ -28,8 +33,16 @@ const SettingsScreen = () => {
             right={() => <Switch value={notifications} onValueChange={setNotifications} />}
           />
           <Divider />
-          
+
           <List.Subheader>Data & Sync</List.Subheader>
+          <List.Item
+            title="Sync Status"
+            description={
+              pendingChanges > 0 ? `${pendingChanges} changes pending` : 'All changes synced'
+            }
+            right={() => <SyncStatusIndicator />}
+            onPress={() => navigation.navigate('Sync')}
+          />
           <List.Item
             title="Sync on Cellular Data"
             description="Allow syncing when not on Wi-Fi"
@@ -41,7 +54,7 @@ const SettingsScreen = () => {
             onPress={() => console.log('Clear data')}
           />
           <Divider />
-          
+
           <List.Subheader>Account</List.Subheader>
           <List.Item
             title="Profile"
@@ -54,7 +67,7 @@ const SettingsScreen = () => {
             onPress={() => console.log('Sign out')}
           />
         </List.Section>
-        
+
         <View style={styles.versionContainer}>
           <Text style={styles.versionText}>Version 1.0.0</Text>
         </View>

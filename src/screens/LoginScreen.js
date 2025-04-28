@@ -1,28 +1,42 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import { Text, TextInput, Button, Surface } from 'react-native-paper';
+import { Text, TextInput, Button, Surface, Snackbar } from 'react-native-paper';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
+import { useDispatch, useSelector } from 'react-redux';
+import { login, selectAuthStatus, selectAuthError } from '../redux/slices/authSlice';
 
 const LoginSchema = Yup.object().shape({
   email: Yup.string().email('Invalid email').required('Email is required'),
-  password: Yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
+  password: Yup.string()
+    .min(6, 'Password must be at least 6 characters')
+    .required('Password is required'),
 });
 
 const LoginScreen = ({ navigation }) => {
+  const dispatch = useDispatch();
+  const status = useSelector(selectAuthStatus);
+  const error = useSelector(selectAuthError);
   const [secureTextEntry, setSecureTextEntry] = useState(true);
-  
-  const handleLogin = (values) => {
-    console.log('Login with:', values);
-    // Authentication logic will be implemented later
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+
+  const handleLogin = async values => {
+    try {
+      await dispatch(login(values)).unwrap();
+      // If successful, the AppNavigator will automatically redirect to the main app
+    } catch (err) {
+      setSnackbarMessage(err.message || 'Login failed');
+      setSnackbarVisible(true);
+    }
   };
-  
+
   return (
     <View style={styles.container}>
       <Surface style={styles.surface}>
         <Text style={styles.title}>Task Manager</Text>
         <Text style={styles.subtitle}>Sign in to your account</Text>
-        
+
         <Formik
           initialValues={{ email: '', password: '' }}
           validationSchema={LoginSchema}
@@ -39,11 +53,12 @@ const LoginScreen = ({ navigation }) => {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 error={touched.email && errors.email}
+                disabled={status === 'loading'}
               />
               {touched.email && errors.email && (
                 <Text style={styles.errorText}>{errors.email}</Text>
               )}
-              
+
               <TextInput
                 label="Password"
                 value={values.password}
@@ -55,25 +70,39 @@ const LoginScreen = ({ navigation }) => {
                   <TextInput.Icon
                     icon={secureTextEntry ? 'eye-off' : 'eye'}
                     onPress={() => setSecureTextEntry(!secureTextEntry)}
+                    disabled={status === 'loading'}
                   />
                 }
                 error={touched.password && errors.password}
+                disabled={status === 'loading'}
               />
               {touched.password && errors.password && (
                 <Text style={styles.errorText}>{errors.password}</Text>
               )}
-              
+
               <Button
                 mode="contained"
                 onPress={handleSubmit}
                 style={styles.button}
+                loading={status === 'loading'}
+                disabled={status === 'loading'}
               >
                 Sign In
               </Button>
+
+              <TouchableOpacity
+                onPress={() => navigation.navigate('PasswordRecovery')}
+                style={styles.forgotPasswordContainer}
+                disabled={status === 'loading'}
+              >
+                <Text style={[styles.link, status === 'loading' && { opacity: 0.5 }]}>
+                  Forgot Password?
+                </Text>
+              </TouchableOpacity>
             </View>
           )}
         </Formik>
-        
+
         <View style={styles.footer}>
           <Text>Don't have an account? </Text>
           <TouchableOpacity onPress={() => navigation.navigate('Register')}>
@@ -81,6 +110,14 @@ const LoginScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       </Surface>
+
+      <Snackbar
+        visible={snackbarVisible}
+        onDismiss={() => setSnackbarVisible(false)}
+        duration={3000}
+      >
+        {snackbarMessage}
+      </Snackbar>
     </View>
   );
 };
@@ -122,6 +159,10 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: 16,
+  },
+  forgotPasswordContainer: {
+    alignSelf: 'center',
+    marginTop: 12,
   },
   footer: {
     flexDirection: 'row',

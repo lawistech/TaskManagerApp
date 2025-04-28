@@ -7,6 +7,10 @@ import { combineReducers } from 'redux';
 import tasksReducer from './slices/tasksSlice';
 import authReducer from './slices/authSlice';
 import categoriesReducer from './slices/categoriesSlice';
+import syncReducer from './slices/syncSlice';
+
+// Import middleware
+import syncMiddleware from './middleware/syncMiddleware';
 
 const persistConfig = {
   key: 'root',
@@ -18,6 +22,7 @@ const rootReducer = combineReducers({
   tasks: tasksReducer,
   auth: authReducer,
   categories: categoriesReducer,
+  sync: syncReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -29,7 +34,7 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
       },
-    }),
+    }).concat(syncMiddleware),
 });
 
 export const persistor = persistStore(store);

@@ -15,8 +15,10 @@ import TaskFormScreen from '../screens/TaskFormScreen';
 import CalendarScreen from '../screens/CalendarScreen';
 import CategoriesScreen from '../screens/CategoriesScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import SyncScreen from '../screens/SyncScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
+import PasswordRecoveryScreen from '../screens/PasswordRecoveryScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -27,6 +29,7 @@ const AuthNavigator = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="Login" component={LoginScreen} />
     <Stack.Screen name="Register" component={RegisterScreen} />
+    <Stack.Screen name="PasswordRecovery" component={PasswordRecoveryScreen} />
   </Stack.Navigator>
 );
 
@@ -36,6 +39,14 @@ const TasksStackNavigator = () => (
     <Stack.Screen name="TasksList" component={TasksScreen} />
     <Stack.Screen name="TaskDetail" component={TaskDetailScreen} />
     <Stack.Screen name="TaskForm" component={TaskFormScreen} />
+  </Stack.Navigator>
+);
+
+// Settings Stack Navigator
+const SettingsStackNavigator = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="SettingsList" component={SettingsScreen} />
+    <Stack.Screen name="Sync" component={SyncScreen} />
   </Stack.Navigator>
 );
 
@@ -74,7 +85,7 @@ const MainTabNavigator = () => (
     <Tab.Screen name="Tasks" component={TasksStackNavigator} />
     <Tab.Screen name="Calendar" component={CalendarScreen} />
     <Tab.Screen name="Categories" component={CategoriesStackNavigator} />
-    <Tab.Screen name="Settings" component={SettingsScreen} />
+    <Tab.Screen name="Settings" component={SettingsStackNavigator} />
   </Tab.Navigator>
 );
 

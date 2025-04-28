@@ -1,0 +1,253 @@
+import { store } from '../redux/store';
+import networkService from './NetworkService';
+import { fetchTasks, addNewTask, updateTask, deleteTask } from '../redux/slices/tasksSlice';
+import { fetchCategories, addNewCategory, updateCategory, deleteCategory } from '../redux/slices/categoriesSlice';
+
+/**
+ * Service for handling data synchronization between local and remote storage
+ */
+class SyncService {
+  constructor() {
+    this.syncQueue = [];
+    this.isSyncing = false;
+    this.syncInterval = null;
+    this.retryCount = 0;
+    this.maxRetries = 5;
+    this.retryDelay = 5000; // 5 seconds
+    this.listeners = [];
+    this.syncStatus = {
+      status: 'idle', // 'idle' | 'syncing' | 'error' | 'success'
+      lastSyncTime: null,
+      pendingChanges: 0,
+      error: null
+    };
+  }
+
+  /**
+   * Initialize the sync service
+   */
+  initialize() {
+    // Listen for network changes
+    networkService.addListener(this.handleNetworkChange);
+    
+    // Set up automatic sync interval (every 5 minutes)
+    this.syncInterval = setInterval(() => {
+      this.syncIfConnected();
+    }, 5 * 60 * 1000);
+  }
+
+  /**
+   * Clean up the sync service
+   */
+  cleanup() {
+    if (this.syncInterval) {
+      clearInterval(this.syncInterval);
+      this.syncInterval = null;
+    }
+  }
+
+  /**
+   * Handle network state changes
+   * @param {Object} networkState - Current network state
+   */
+  handleNetworkChange = (networkState) => {
+    if (networkState.isConnected && this.syncQueue.length > 0) {
+      this.syncData();
+    }
+  }
+
+  /**
+   * Add an operation to the sync queue
+   * @param {Object} operation - Operation to be synced
+   */
+  addToSyncQueue(operation) {
+    this.syncQueue.push({
+      ...operation,
+      timestamp: new Date().toISOString(),
+      attempts: 0
+    });
+    
+    this.updateSyncStatus({
+      pendingChanges: this.syncQueue.length
+    });
+    
+    // Try to sync immediately if connected
+    this.syncIfConnected();
+  }
+
+  /**
+   * Sync data if connected to network
+   */
+  async syncIfConnected() {
+    const networkState = await networkService.getCurrentState();
+    if (networkState.isConnected) {
+      this.syncData();
+    }
+  }
+
+  /**
+   * Sync all pending operations
+   */
+  async syncData() {
+    if (this.isSyncing || this.syncQueue.length === 0) {
+      return;
+    }
+
+    this.isSyncing = true;
+    this.updateSyncStatus({
+      status: 'syncing'
+    });
+
+    try {
+      // Process each operation in the queue
+      const successfulOperations = [];
+      const failedOperations = [];
+
+      for (const operation of this.syncQueue) {
+        try {
+          await this.processOperation(operation);
+          successfulOperations.push(operation);
+        } catch (error) {
+          operation.attempts += 1;
+          operation.lastError = error.message;
+          
+          if (operation.attempts >= this.maxRetries) {
+            // Move to failed operations if max retries reached
+            failedOperations.push(operation);
+          }
+        }
+      }
+
+      // Remove successful operations from queue
+      this.syncQueue = this.syncQueue.filter(
+        op => !successfulOperations.includes(op) && !failedOperations.includes(op)
+      );
+
+      // If there are failed operations that reached max retries, we need conflict resolution
+      if (failedOperations.length > 0) {
+        this.handleFailedOperations(failedOperations);
+      }
+
+      this.updateSyncStatus({
+        status: 'success',
+        lastSyncTime: new Date().toISOString(),
+        pendingChanges: this.syncQueue.length,
+        error: null
+      });
+    } catch (error) {
+      this.updateSyncStatus({
+        status: 'error',
+        error: error.message
+      });
+      
+      // Schedule retry
+      setTimeout(() => {
+        this.retryCount += 1;
+        if (this.retryCount < this.maxRetries) {
+          this.syncData();
+        }
+      }, this.retryDelay);
+    } finally {
+      this.isSyncing = false;
+    }
+  }
+
+  /**
+   * Process a single sync operation
+   * @param {Object} operation - Operation to process
+   */
+  async processOperation(operation) {
+    const { type, entityType, data } = operation;
+    const dispatch = store.dispatch;
+
+    switch (entityType) {
+      case 'task':
+        if (type === 'create') {
+          await dispatch(addNewTask(data)).unwrap();
+        } else if (type === 'update') {
+          await dispatch(updateTask(data)).unwrap();
+        } else if (type === 'delete') {
+          await dispatch(deleteTask(data.id)).unwrap();
+        }
+        break;
+      
+      case 'category':
+        if (type === 'create') {
+          await dispatch(addNewCategory(data)).unwrap();
+        } else if (type === 'update') {
+          await dispatch(updateCategory(data)).unwrap();
+        } else if (type === 'delete') {
+          await dispatch(deleteCategory(data.id)).unwrap();
+        }
+        break;
+      
+      default:
+        throw new Error(`Unknown entity type: ${entityType}`);
+    }
+  }
+
+  /**
+   * Handle operations that failed after max retries
+   * @param {Array} failedOperations - List of failed operations
+   */
+  handleFailedOperations(failedOperations) {
+    // For now, just log the failed operations
+    // This will be replaced with conflict resolution UI
+    console.error('Failed operations:', failedOperations);
+  }
+
+  /**
+   * Manually trigger a sync
+   */
+  manualSync() {
+    this.retryCount = 0;
+    return this.syncIfConnected();
+  }
+
+  /**
+   * Update the sync status and notify listeners
+   * @param {Object} updates - Status updates
+   */
+  updateSyncStatus(updates) {
+    this.syncStatus = {
+      ...this.syncStatus,
+      ...updates
+    };
+    
+    this.notifyListeners();
+  }
+
+  /**
+   * Add a listener for sync status changes
+   * @param {Function} listener - Callback function
+   * @returns {Function} - Function to remove the listener
+   */
+  addListener(listener) {
+    this.listeners.push(listener);
+    return () => {
+      this.listeners = this.listeners.filter(l => l !== listener);
+    };
+  }
+
+  /**
+   * Notify all listeners of sync status changes
+   */
+  notifyListeners() {
+    this.listeners.forEach(listener => {
+      listener(this.syncStatus);
+    });
+  }
+
+  /**
+   * Get current sync status
+   * @returns {Object} - Current sync status
+   */
+  getSyncStatus() {
+    return { ...this.syncStatus };
+  }
+}
+
+// Create a singleton instance
+const syncService = new SyncService();
+
+export default syncService;
