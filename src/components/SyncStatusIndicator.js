@@ -1,13 +1,9 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import { Text, Badge, ActivityIndicator, Colors } from 'react-native-paper';
+import { Text, Badge, ActivityIndicator } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { useSelector, useDispatch } from 'react-redux';
-import { 
-  selectSyncStatus, 
-  selectPendingChanges, 
-  selectIsOnline 
-} from '../redux/slices/syncSlice';
+import { selectSyncStatus, selectPendingChanges, selectIsOnline } from '../redux/slices/syncSlice';
 import useSyncStatus from '../hooks/useSyncStatus';
 
 /**
@@ -18,32 +14,32 @@ const SyncStatusIndicator = ({ onPress }) => {
   const pendingChanges = useSelector(selectPendingChanges);
   const isOnline = useSelector(selectIsOnline);
   const { manualSync } = useSyncStatus();
-  
+
   // Determine icon and color based on status
   let icon, color, text;
-  
+
   if (!isOnline) {
     icon = 'cloud-offline';
-    color = Colors.grey500;
+    color = '#9E9E9E'; // grey500 equivalent
     text = 'Offline';
   } else if (syncStatus === 'syncing') {
     icon = null; // Use activity indicator instead
-    color = Colors.blue500;
+    color = '#2196F3'; // blue500 equivalent
     text = 'Syncing...';
   } else if (syncStatus === 'error') {
     icon = 'alert-circle';
-    color = Colors.red500;
+    color = '#F44336'; // red500 equivalent
     text = 'Sync Error';
   } else if (pendingChanges > 0) {
     icon = 'sync';
-    color = Colors.orange500;
+    color = '#FF9800'; // orange500 equivalent
     text = `${pendingChanges} pending`;
   } else {
     icon = 'checkmark-circle';
-    color = Colors.green500;
+    color = '#4CAF50'; // green500 equivalent
     text = 'Synced';
   }
-  
+
   const handlePress = () => {
     if (onPress) {
       onPress();
@@ -51,10 +47,10 @@ const SyncStatusIndicator = ({ onPress }) => {
       manualSync();
     }
   };
-  
+
   return (
-    <TouchableOpacity 
-      style={styles.container} 
+    <TouchableOpacity
+      style={styles.container}
       onPress={handlePress}
       disabled={!isOnline && pendingChanges === 0}
     >
@@ -66,11 +62,9 @@ const SyncStatusIndicator = ({ onPress }) => {
         )}
         <Text style={[styles.text, { color }]}>{text}</Text>
       </View>
-      
+
       {pendingChanges > 0 && (
-        <Badge style={[styles.badge, { backgroundColor: color }]}>
-          {pendingChanges}
-        </Badge>
+        <Badge style={[styles.badge, { backgroundColor: color }]}>{pendingChanges}</Badge>
       )}
     </TouchableOpacity>
   );

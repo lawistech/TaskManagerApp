@@ -1,48 +1,68 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Text, Appbar } from 'react-native-paper';
+import { Text, Appbar, Snackbar } from 'react-native-paper';
 import { useSelector, useDispatch } from 'react-redux';
-import { v4 as uuidv4 } from 'uuid';
+import { generateId } from '../utils/idGenerator';
 
 import TaskForm from '../components/TaskForm';
-import { 
-  addTask, 
-  updateTaskDetails 
-} from '../redux/slices/tasksSlice';
+import { addTask, updateTaskDetails } from '../redux/slices/tasksSlice';
 import { selectAllCategories } from '../redux/slices/categoriesSlice';
 
 const TaskFormScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
   const categories = useSelector(selectAllCategories);
   const task = route.params?.task;
-  
-  const handleSubmit = (values) => {
-    if (task) {
-      dispatch(updateTaskDetails({ id: task.id, ...values }));
-    } else {
-      const newTask = {
-        id: uuidv4(),
-        completed: false,
-        createdAt: new Date().toISOString(),
-        ...values,
-      };
-      dispatch(addTask(newTask));
+  const [errorVisible, setErrorVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const handleSubmit = values => {
+    try {
+      if (task) {
+        // Add updatedAt timestamp for existing tasks
+        dispatch(
+          updateTaskDetails({
+            id: task.id,
+            ...values,
+            updatedAt: new Date().toISOString(),
+          }),
+        );
+      } else {
+        const newTask = {
+          id: generateId(),
+          completed: false,
+          createdAt: new Date().toISOString(),
+          ...values,
+        };
+        dispatch(addTask(newTask));
+      }
+      navigation.goBack();
+    } catch (error) {
+      console.error('Error submitting task:', error);
+      setErrorMessage(error.message || 'Failed to save task. Please try again.');
+      setErrorVisible(true);
     }
-    navigation.goBack();
   };
-  
+
   return (
     <View style={styles.container}>
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title={task ? 'Edit Task' : 'Create Task'} />
       </Appbar.Header>
-      
-      <TaskForm
-        initialValues={task}
-        onSubmit={handleSubmit}
-        categories={categories}
-      />
+
+      <TaskForm initialValues={task} onSubmit={handleSubmit} categories={categories} />
+
+      <Snackbar
+        visible={errorVisible}
+        onDismiss={() => setErrorVisible(false)}
+        action={{
+          label: 'OK',
+          onPress: () => setErrorVisible(false),
+        }}
+        duration={3000}
+      >
+        {errorMessage}
+      </Snackbar>
     </View>
   );
 };

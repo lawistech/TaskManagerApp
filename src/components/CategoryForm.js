@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { TextInput, Button, Text, IconButton } from 'react-native-paper';
 import { Formik } from 'formik';
@@ -10,12 +10,14 @@ const CategorySchema = Yup.object().shape({
 });
 
 const CategoryForm = ({ initialValues, onSubmit }) => {
+  const [submitting, setSubmitting] = useState(false);
+
   const defaultValues = {
     name: '',
     color: '#6200ee',
     ...initialValues,
   };
-  
+
   // Predefined colors for categories
   const colorOptions = [
     '#6200ee', // Purple
@@ -27,14 +29,10 @@ const CategoryForm = ({ initialValues, onSubmit }) => {
     '#f44336', // Red
     '#9c27b0', // Deep Purple
   ];
-  
+
   return (
     <View style={styles.container}>
-      <Formik
-        initialValues={defaultValues}
-        validationSchema={CategorySchema}
-        onSubmit={onSubmit}
-      >
+      <Formik initialValues={defaultValues} validationSchema={CategorySchema} onSubmit={onSubmit}>
         {({ handleChange, handleBlur, handleSubmit, setFieldValue, values, errors, touched }) => (
           <View style={styles.form}>
             <TextInput
@@ -45,10 +43,8 @@ const CategoryForm = ({ initialValues, onSubmit }) => {
               style={styles.input}
               error={touched.name && errors.name}
             />
-            {touched.name && errors.name && (
-              <Text style={styles.errorText}>{errors.name}</Text>
-            )}
-            
+            {touched.name && errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
+
             <Text style={styles.colorLabel}>Category Color</Text>
             <View style={styles.colorContainer}>
               {colorOptions.map(color => (
@@ -57,24 +53,25 @@ const CategoryForm = ({ initialValues, onSubmit }) => {
                   icon="circle"
                   size={30}
                   iconColor={color}
-                  style={[
-                    styles.colorOption,
-                    values.color === color && styles.selectedColor,
-                  ]}
+                  style={[styles.colorOption, values.color === color && styles.selectedColor]}
                   onPress={() => setFieldValue('color', color)}
                 />
               ))}
             </View>
-            {touched.color && errors.color && (
-              <Text style={styles.errorText}>{errors.color}</Text>
-            )}
-            
+            {touched.color && errors.color && <Text style={styles.errorText}>{errors.color}</Text>}
+
             <Button
               mode="contained"
-              onPress={handleSubmit}
+              onPress={() => {
+                setSubmitting(true);
+                handleSubmit();
+                // Reset submitting state after a short delay
+                setTimeout(() => setSubmitting(false), 500);
+              }}
               style={styles.button}
+              disabled={submitting}
             >
-              {initialValues ? 'Update Category' : 'Create Category'}
+              {submitting ? 'Processing...' : initialValues ? 'Update Category' : 'Create Category'}
             </Button>
           </View>
         )}

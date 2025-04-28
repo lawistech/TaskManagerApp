@@ -1,20 +1,105 @@
-import React from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, List, Switch, Divider } from 'react-native-paper';
-import { useSelector } from 'react-redux';
-import { selectPendingChanges, selectIsOnline } from '../redux/slices/syncSlice';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { Text, List, Switch, Divider, Appbar } from 'react-native-paper';
+import { useSelector, useDispatch } from 'react-redux';
+import { selectPendingChanges, selectIsOnline, updateSyncStatus } from '../redux/slices/syncSlice';
 import SyncStatusIndicator from '../components/SyncStatusIndicator';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SettingsScreen = ({ navigation }) => {
-  const [darkMode, setDarkMode] = React.useState(false);
-  const [notifications, setNotifications] = React.useState(true);
-  const [syncOnCellular, setSyncOnCellular] = React.useState(false);
+  const dispatch = useDispatch();
+  const [darkMode, setDarkMode] = useState(false);
+  const [notifications, setNotifications] = useState(true);
+  const [syncOnCellular, setSyncOnCellular] = useState(false);
   const pendingChanges = useSelector(selectPendingChanges);
   const isOnline = useSelector(selectIsOnline);
 
+  // Load settings from AsyncStorage on component mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const darkModeSetting = await AsyncStorage.getItem('darkMode');
+        const notificationsSetting = await AsyncStorage.getItem('notifications');
+        const syncOnCellularSetting = await AsyncStorage.getItem('syncOnCellular');
+
+        if (darkModeSetting !== null) setDarkMode(darkModeSetting === 'true');
+        if (notificationsSetting !== null) setNotifications(notificationsSetting === 'true');
+        if (syncOnCellularSetting !== null) setSyncOnCellular(syncOnCellularSetting === 'true');
+      } catch (error) {
+        console.error('Error loading settings:', error);
+      }
+    };
+
+    loadSettings();
+  }, []);
+
+  // Save settings to AsyncStorage when they change
+  const handleDarkModeChange = value => {
+    setDarkMode(value);
+    AsyncStorage.setItem('darkMode', value.toString());
+  };
+
+  const handleNotificationsChange = value => {
+    setNotifications(value);
+    AsyncStorage.setItem('notifications', value.toString());
+  };
+
+  const handleSyncOnCellularChange = value => {
+    setSyncOnCellular(value);
+    AsyncStorage.setItem('syncOnCellular', value.toString());
+  };
+
+  const handleClearData = () => {
+    Alert.alert(
+      'Clear Local Data',
+      'Are you sure you want to clear all local data? This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Clear Data',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Clear AsyncStorage
+              await AsyncStorage.clear();
+
+              // Reset sync status
+              dispatch(
+                updateSyncStatus({
+                  status: 'idle',
+                  lastSyncTime: null,
+                  pendingChanges: 0,
+                  error: null,
+                  conflicts: [],
+                }),
+              );
+
+              // Show success message
+              Alert.alert('Success', 'All local data has been cleared.');
+
+              // Reset settings
+              setDarkMode(false);
+              setNotifications(true);
+              setSyncOnCellular(false);
+            } catch (error) {
+              console.error('Error clearing data:', error);
+              Alert.alert('Error', 'Failed to clear local data.');
+            }
+          },
+        },
+      ],
+      { cancelable: true },
+    );
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Settings</Text>
+      <Appbar.Header>
+        <Appbar.Content title="Settings" />
+      </Appbar.Header>
 
       <ScrollView>
         <List.Section>
@@ -22,7 +107,7 @@ const SettingsScreen = ({ navigation }) => {
           <List.Item
             title="Dark Mode"
             description="Enable dark theme"
-            right={() => <Switch value={darkMode} onValueChange={setDarkMode} />}
+            right={() => <Switch value={darkMode} onValueChange={handleDarkModeChange} />}
           />
           <Divider />
 
@@ -30,7 +115,7 @@ const SettingsScreen = ({ navigation }) => {
           <List.Item
             title="Enable Notifications"
             description="Receive reminders for tasks"
-            right={() => <Switch value={notifications} onValueChange={setNotifications} />}
+            right={() => <Switch value={notifications} onValueChange={handleNotificationsChange} />}
           />
           <Divider />
 
@@ -46,12 +131,14 @@ const SettingsScreen = ({ navigation }) => {
           <List.Item
             title="Sync on Cellular Data"
             description="Allow syncing when not on Wi-Fi"
-            right={() => <Switch value={syncOnCellular} onValueChange={setSyncOnCellular} />}
+            right={() => (
+              <Switch value={syncOnCellular} onValueChange={handleSyncOnCellularChange} />
+            )}
           />
           <List.Item
             title="Clear Local Data"
             description="Remove all data stored on this device"
-            onPress={() => console.log('Clear data')}
+            onPress={handleClearData}
           />
           <Divider />
 
