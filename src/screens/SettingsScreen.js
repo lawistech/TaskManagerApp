@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Text, List, Switch, Divider, Appbar } from 'react-native-paper';
+import { Text, List, Switch, Divider, Appbar, Button } from 'react-native-paper';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectPendingChanges, selectIsOnline, updateSyncStatus } from '../redux/slices/syncSlice';
 import SyncStatusIndicator from '../components/SyncStatusIndicator';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { resetStore } from '../utils/resetStore';
 
 const SettingsScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -95,6 +96,46 @@ const SettingsScreen = ({ navigation }) => {
     );
   };
 
+  const handleResetStore = () => {
+    Alert.alert(
+      'Reset Application Data',
+      'This will reset all application data and fix any data corruption issues. The app will restart. Continue?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Reset Data',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await resetStore();
+
+              // Show success message
+              Alert.alert('Success', 'Application data has been reset. The app will now restart.', [
+                {
+                  text: 'OK',
+                  onPress: () => {
+                    // Force a reload of the app
+                    navigation.reset({
+                      index: 0,
+                      routes: [{ name: 'Home' }],
+                    });
+                  },
+                },
+              ]);
+            } catch (error) {
+              console.error('Error resetting store:', error);
+              Alert.alert('Error', 'Failed to reset application data.');
+            }
+          },
+        },
+      ],
+      { cancelable: true },
+    );
+  };
+
   return (
     <View style={styles.container}>
       <Appbar.Header>
@@ -139,6 +180,11 @@ const SettingsScreen = ({ navigation }) => {
             title="Clear Local Data"
             description="Remove all data stored on this device"
             onPress={handleClearData}
+          />
+          <List.Item
+            title="Fix Data Issues"
+            description="Reset application data to fix corruption issues"
+            onPress={handleResetStore}
           />
           <Divider />
 

@@ -8,7 +8,7 @@ const initialState = {
   error: null,
   isOnline: false,
   connectionType: null,
-  conflicts: []
+  conflicts: [],
 };
 
 // Create the sync slice
@@ -20,19 +20,19 @@ const syncSlice = createSlice({
     updateSyncStatus: (state, action) => {
       return { ...state, ...action.payload };
     },
-    
+
     // Update network status
     updateNetworkStatus: (state, action) => {
       const { isOnline, connectionType } = action.payload;
       state.isOnline = isOnline;
       state.connectionType = connectionType;
     },
-    
+
     // Add a conflict
     addConflict: (state, action) => {
       state.conflicts.push(action.payload);
     },
-    
+
     // Update a conflict
     updateConflict: (state, action) => {
       const { id, ...updates } = action.payload;
@@ -41,34 +41,42 @@ const syncSlice = createSlice({
         state.conflicts[conflictIndex] = { ...state.conflicts[conflictIndex], ...updates };
       }
     },
-    
+
     // Remove a conflict
     removeConflict: (state, action) => {
       state.conflicts = state.conflicts.filter(c => c.id !== action.payload);
     },
-    
+
     // Clear all resolved conflicts
-    clearResolvedConflicts: (state) => {
+    clearResolvedConflicts: state => {
       state.conflicts = state.conflicts.filter(c => c.status !== 'resolved');
     },
-    
+
     // Increment pending changes
-    incrementPendingChanges: (state) => {
+    incrementPendingChanges: state => {
       state.pendingChanges += 1;
     },
-    
+
     // Decrement pending changes
-    decrementPendingChanges: (state) => {
+    decrementPendingChanges: state => {
       if (state.pendingChanges > 0) {
         state.pendingChanges -= 1;
       }
     },
-    
+
     // Reset pending changes
-    resetPendingChanges: (state) => {
+    resetPendingChanges: state => {
       state.pendingChanges = 0;
-    }
-  }
+    },
+  },
+  extraReducers: builder => {
+    builder
+      // Reset app
+      .addCase('RESET_APP', () => {
+        // Return the initial state
+        return initialState;
+      });
+  },
 });
 
 // Export actions
@@ -81,7 +89,7 @@ export const {
   clearResolvedConflicts,
   incrementPendingChanges,
   decrementPendingChanges,
-  resetPendingChanges
+  resetPendingChanges,
 } = syncSlice.actions;
 
 // Export selectors
@@ -93,7 +101,7 @@ export const selectIsOnline = state => state.sync.isOnline;
 export const selectConnectionType = state => state.sync.connectionType;
 export const selectAllConflicts = state => state.sync.conflicts;
 export const selectConflictById = (state, id) => state.sync.conflicts.find(c => c.id === id);
-export const selectConflictsByStatus = (state, status) => 
+export const selectConflictsByStatus = (state, status) =>
   state.sync.conflicts.filter(c => c.status === status);
 
 // Export reducer

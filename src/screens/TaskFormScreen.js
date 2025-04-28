@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text, Appbar, Snackbar } from 'react-native-paper';
 import { useSelector, useDispatch } from 'react-redux';
@@ -14,8 +14,16 @@ const TaskFormScreen = ({ navigation, route }) => {
   const task = route.params?.task;
   const [errorVisible, setErrorVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const isSubmittingRef = useRef(false);
 
   const handleSubmit = values => {
+    // Prevent duplicate submissions
+    if (isSubmittingRef.current) {
+      return;
+    }
+
+    isSubmittingRef.current = true;
+
     try {
       if (task) {
         // Add updatedAt timestamp for existing tasks
@@ -35,11 +43,17 @@ const TaskFormScreen = ({ navigation, route }) => {
         };
         dispatch(addTask(newTask));
       }
-      navigation.goBack();
+
+      // Add a small delay before navigation to prevent any race conditions
+      setTimeout(() => {
+        isSubmittingRef.current = false;
+        navigation.goBack();
+      }, 300);
     } catch (error) {
       console.error('Error submitting task:', error);
       setErrorMessage(error.message || 'Failed to save task. Please try again.');
       setErrorVisible(true);
+      isSubmittingRef.current = false;
     }
   };
 

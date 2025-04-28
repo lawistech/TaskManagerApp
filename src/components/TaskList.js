@@ -1,32 +1,28 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, FlatList } from 'react-native';
-import { Text, Searchbar, Chip, Menu, Button, Divider } from 'react-native-paper';
+import { Text, Searchbar, Chip, Menu, Button, Divider, useTheme } from 'react-native-paper';
 import TaskCard from './TaskCard';
 
-const TaskList = ({ 
-  tasks, 
-  categories, 
-  onTaskPress, 
-  onToggleComplete,
-  onAddTask,
-}) => {
+const TaskList = ({ tasks, categories, onTaskPress, onToggleComplete, onAddTask }) => {
+  const theme = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMenuVisible, setFilterMenuVisible] = useState(false);
   const [sortMenuVisible, setSortMenuVisible] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [showCompleted, setShowCompleted] = useState(true);
   const [sortBy, setSortBy] = useState('dueDate'); // 'dueDate', 'priority', 'title', 'createdAt'
-  
+
   // Filter tasks based on search query, category, and completion status
   const filteredTasks = tasks.filter(task => {
-    const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (task.description && task.description.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesSearch =
+      task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (task.description && task.description.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesCategory = selectedCategory ? task.categoryId === selectedCategory : true;
     const matchesCompletion = showCompleted ? true : !task.completed;
-    
+
     return matchesSearch && matchesCategory && matchesCompletion;
   });
-  
+
   // Sort tasks based on the selected sort option
   const sortedTasks = [...filteredTasks].sort((a, b) => {
     switch (sortBy) {
@@ -46,11 +42,11 @@ const TaskList = ({
         return 0;
     }
   });
-  
-  const getCategoryById = (categoryId) => {
+
+  const getCategoryById = categoryId => {
     return categories.find(category => category.id === categoryId);
   };
-  
+
   const renderItem = ({ item }) => (
     <TaskCard
       task={item}
@@ -59,16 +55,22 @@ const TaskList = ({
       onToggleComplete={onToggleComplete}
     />
   );
-  
+
   const renderEmptyList = () => (
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyText}>No tasks found</Text>
-      <Button mode="contained" onPress={onAddTask} style={styles.addButton}>
+      <Button
+        mode="contained"
+        onPress={onAddTask}
+        style={styles.addButton}
+        contentStyle={styles.buttonContent}
+        labelStyle={styles.buttonLabel}
+      >
         Add a Task
       </Button>
     </View>
   );
-  
+
   return (
     <View style={styles.container}>
       <Searchbar
@@ -76,113 +78,135 @@ const TaskList = ({
         onChangeText={setSearchQuery}
         value={searchQuery}
         style={styles.searchBar}
+        inputStyle={styles.searchBarInput}
+        iconSize={24}
       />
-      
+
       <View style={styles.filtersContainer}>
         <Menu
           visible={filterMenuVisible}
           onDismiss={() => setFilterMenuVisible(false)}
           anchor={
-            <Button 
-              mode="outlined" 
+            <Button
+              mode="outlined"
               onPress={() => setFilterMenuVisible(true)}
               icon="filter-variant"
               style={styles.filterButton}
+              contentStyle={styles.buttonContent}
+              labelStyle={styles.buttonLabel}
             >
               Filter
             </Button>
           }
         >
-          <Menu.Item 
-            title="All Categories" 
+          <Menu.Item
+            title="All Categories"
             onPress={() => {
               setSelectedCategory(null);
               setFilterMenuVisible(false);
-            }} 
+            }}
+            titleStyle={styles.menuItemText}
+            style={styles.menuItem}
           />
           <Divider />
           {categories.map(category => (
-            <Menu.Item 
+            <Menu.Item
               key={category.id}
               title={category.name}
               onPress={() => {
                 setSelectedCategory(category.id);
                 setFilterMenuVisible(false);
               }}
+              titleStyle={styles.menuItemText}
+              style={styles.menuItem}
             />
           ))}
           <Divider />
-          <Menu.Item 
+          <Menu.Item
             title={`${showCompleted ? 'Hide' : 'Show'} Completed`}
             onPress={() => {
               setShowCompleted(!showCompleted);
               setFilterMenuVisible(false);
             }}
+            titleStyle={styles.menuItemText}
+            style={styles.menuItem}
           />
         </Menu>
-        
+
         <Menu
           visible={sortMenuVisible}
           onDismiss={() => setSortMenuVisible(false)}
           anchor={
-            <Button 
-              mode="outlined" 
+            <Button
+              mode="outlined"
               onPress={() => setSortMenuVisible(true)}
               icon="sort"
               style={styles.sortButton}
+              contentStyle={styles.buttonContent}
+              labelStyle={styles.buttonLabel}
             >
               Sort
             </Button>
           }
         >
-          <Menu.Item 
-            title="Due Date" 
+          <Menu.Item
+            title="Due Date"
             onPress={() => {
               setSortBy('dueDate');
               setSortMenuVisible(false);
-            }} 
+            }}
+            titleStyle={styles.menuItemText}
+            style={styles.menuItem}
           />
-          <Menu.Item 
-            title="Priority" 
+          <Menu.Item
+            title="Priority"
             onPress={() => {
               setSortBy('priority');
               setSortMenuVisible(false);
-            }} 
+            }}
+            titleStyle={styles.menuItemText}
+            style={styles.menuItem}
           />
-          <Menu.Item 
-            title="Title" 
+          <Menu.Item
+            title="Title"
             onPress={() => {
               setSortBy('title');
               setSortMenuVisible(false);
-            }} 
+            }}
+            titleStyle={styles.menuItemText}
+            style={styles.menuItem}
           />
-          <Menu.Item 
-            title="Created Date" 
+          <Menu.Item
+            title="Created Date"
             onPress={() => {
               setSortBy('createdAt');
               setSortMenuVisible(false);
-            }} 
+            }}
+            titleStyle={styles.menuItemText}
+            style={styles.menuItem}
           />
         </Menu>
       </View>
-      
+
       {selectedCategory && (
         <View style={styles.activeFiltersContainer}>
-          <Chip 
+          <Chip
             onClose={() => setSelectedCategory(null)}
             style={styles.filterChip}
+            textStyle={styles.chipText}
           >
             {getCategoryById(selectedCategory)?.name || 'Category'}
           </Chip>
         </View>
       )}
-      
+
       <FlatList
         data={sortedTasks}
         renderItem={renderItem}
-        keyExtractor={item => item.id}
+        keyExtractor={item => item.id.toString()} // Ensure keys are strings
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={renderEmptyList}
+        extraData={sortedTasks.length} // Force re-render when list changes
       />
     </View>
   );
@@ -196,11 +220,15 @@ const styles = StyleSheet.create({
   searchBar: {
     margin: 16,
     elevation: 2,
+    height: 60,
+  },
+  searchBarInput: {
+    fontSize: 18,
   },
   filtersContainer: {
     flexDirection: 'row',
     paddingHorizontal: 16,
-    marginBottom: 8,
+    marginBottom: 12,
   },
   filterButton: {
     flex: 1,
@@ -210,6 +238,21 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 8,
   },
+  buttonContent: {
+    height: 50,
+    paddingVertical: 8,
+  },
+  buttonLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  menuItem: {
+    height: 56,
+    justifyContent: 'center',
+  },
+  menuItemText: {
+    fontSize: 16,
+  },
   activeFiltersContainer: {
     flexDirection: 'row',
     paddingHorizontal: 16,
@@ -217,6 +260,10 @@ const styles = StyleSheet.create({
   },
   filterChip: {
     marginRight: 8,
+    height: 40,
+  },
+  chipText: {
+    fontSize: 16,
   },
   listContent: {
     padding: 16,
@@ -230,12 +277,13 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 20,
     color: '#757575',
-    marginBottom: 16,
+    marginBottom: 24,
   },
   addButton: {
     backgroundColor: '#6200ee',
+    paddingHorizontal: 16,
   },
 });
 

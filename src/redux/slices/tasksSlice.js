@@ -13,17 +13,17 @@ export const fetchTasks = createAsyncThunk('tasks/fetchTasks', async () => {
   return [];
 });
 
-export const addNewTask = createAsyncThunk('tasks/addNewTask', async (task) => {
+export const addNewTask = createAsyncThunk('tasks/addNewTask', async task => {
   // This will be replaced with actual API call
   return task;
 });
 
-export const updateTask = createAsyncThunk('tasks/updateTask', async (task) => {
+export const updateTask = createAsyncThunk('tasks/updateTask', async task => {
   // This will be replaced with actual API call
   return task;
 });
 
-export const deleteTask = createAsyncThunk('tasks/deleteTask', async (taskId) => {
+export const deleteTask = createAsyncThunk('tasks/deleteTask', async taskId => {
   // This will be replaced with actual API call
   return taskId;
 });
@@ -35,7 +35,11 @@ const tasksSlice = createSlice({
   reducers: {
     // Local actions that don't require API calls
     addTask: (state, action) => {
-      state.tasks.push(action.payload);
+      // Check if task with this ID already exists
+      const exists = state.tasks.some(task => task.id === action.payload.id);
+      if (!exists) {
+        state.tasks.push(action.payload);
+      }
     },
     removeTask: (state, action) => {
       state.tasks = state.tasks.filter(task => task.id !== action.payload);
@@ -54,10 +58,10 @@ const tasksSlice = createSlice({
       }
     },
   },
-  extraReducers: (builder) => {
+  extraReducers: builder => {
     builder
       // Fetch tasks
-      .addCase(fetchTasks.pending, (state) => {
+      .addCase(fetchTasks.pending, state => {
         state.status = 'loading';
       })
       .addCase(fetchTasks.fulfilled, (state, action) => {
@@ -70,7 +74,11 @@ const tasksSlice = createSlice({
       })
       // Add new task
       .addCase(addNewTask.fulfilled, (state, action) => {
-        state.tasks.push(action.payload);
+        // Check if task with this ID already exists
+        const exists = state.tasks.some(task => task.id === action.payload.id);
+        if (!exists) {
+          state.tasks.push(action.payload);
+        }
       })
       // Update task
       .addCase(updateTask.fulfilled, (state, action) => {
@@ -83,6 +91,13 @@ const tasksSlice = createSlice({
       // Delete task
       .addCase(deleteTask.fulfilled, (state, action) => {
         state.tasks = state.tasks.filter(task => task.id !== action.payload);
+      })
+      // Reset app
+      .addCase('RESET_APP', state => {
+        // Reset to initial state
+        state.tasks = [];
+        state.status = 'idle';
+        state.error = null;
       });
   },
 });
@@ -91,14 +106,14 @@ const tasksSlice = createSlice({
 export const { addTask, removeTask, toggleTaskCompletion, updateTaskDetails } = tasksSlice.actions;
 
 // Export selectors
-export const selectAllTasks = (state) => state.tasks.tasks;
+export const selectAllTasks = state => state.tasks.tasks;
 export const selectTaskById = (state, taskId) => state.tasks.tasks.find(task => task.id === taskId);
-export const selectTasksByCategory = (state, categoryId) => 
+export const selectTasksByCategory = (state, categoryId) =>
   state.tasks.tasks.filter(task => task.categoryId === categoryId);
-export const selectCompletedTasks = (state) => state.tasks.tasks.filter(task => task.completed);
-export const selectIncompleteTasks = (state) => state.tasks.tasks.filter(task => !task.completed);
-export const selectTasksStatus = (state) => state.tasks.status;
-export const selectTasksError = (state) => state.tasks.error;
+export const selectCompletedTasks = state => state.tasks.tasks.filter(task => task.completed);
+export const selectIncompleteTasks = state => state.tasks.tasks.filter(task => !task.completed);
+export const selectTasksStatus = state => state.tasks.status;
+export const selectTasksError = state => state.tasks.error;
 
 // Export reducer
 export default tasksSlice.reducer;

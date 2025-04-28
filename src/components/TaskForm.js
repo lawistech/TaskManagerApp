@@ -171,15 +171,15 @@ const TaskForm = ({ initialValues, onSubmit, categories = [] }) => {
             <Button
               mode="contained"
               onPress={() => {
+                if (submitting) return; // Prevent multiple submissions
                 setSubmitting(true);
                 try {
                   handleSubmit();
                 } catch (error) {
                   console.error('Error submitting form:', error);
-                } finally {
-                  // Reset submitting state after a short delay
-                  setTimeout(() => setSubmitting(false), 500);
+                  setSubmitting(false); // Reset on error
                 }
+                // Don't reset submitting state here - let parent component handle it
               }}
               style={styles.button}
               disabled={submitting}

@@ -36,6 +36,12 @@ const CategoriesScreen = ({ navigation }) => {
 
   const handleSubmitCategory = values => {
     try {
+      // If values is null, it means the user canceled the operation
+      if (values === null) {
+        setModalVisible(false);
+        return;
+      }
+
       if (editingCategory) {
         dispatch(updateCategoryDetails({ id: editingCategory.id, ...values }));
       } else {
@@ -72,14 +78,11 @@ const CategoriesScreen = ({ navigation }) => {
           onDismiss={() => setModalVisible(false)}
           contentContainerStyle={styles.modalContainer}
         >
-          <Text style={styles.modalTitle}>
-            {editingCategory ? 'Edit Category' : 'Add Category'}
-          </Text>
           <CategoryForm initialValues={editingCategory} onSubmit={handleSubmitCategory} />
         </Modal>
       </Portal>
 
-      <FAB style={styles.fab} icon="plus" onPress={handleAddCategory} />
+      <FAB style={styles.fab} icon="folder-plus" label="New Category" onPress={handleAddCategory} />
     </View>
   );
 };
@@ -95,17 +98,30 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: '#6200ee',
+    borderRadius: 28,
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   modalContainer: {
     backgroundColor: 'white',
-    padding: 20,
-    margin: 20,
-    borderRadius: 8,
+    padding: 0,
+    margin: 0,
+    borderRadius: 0,
+    width: '100%',
+    height: '100%',
+    maxWidth: '100%',
+    maxHeight: '100%',
+    alignSelf: 'center',
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 16,
+    marginBottom: 20,
+    color: '#6200ee',
+    textAlign: 'center',
   },
 });
 

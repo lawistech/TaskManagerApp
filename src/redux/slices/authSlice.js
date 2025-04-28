@@ -112,6 +112,11 @@ const authSlice = createSlice({
       .addCase(resetPassword.rejected, (state, action) => {
         state.passwordResetStatus = 'failed';
         state.passwordResetError = action.error.message;
+      })
+      // Reset app
+      .addCase('RESET_APP', () => {
+        // Return the initial state
+        return initialState;
       });
   },
 });

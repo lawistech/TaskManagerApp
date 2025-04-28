@@ -13,17 +13,17 @@ export const fetchCategories = createAsyncThunk('categories/fetchCategories', as
   return [];
 });
 
-export const addNewCategory = createAsyncThunk('categories/addNewCategory', async (category) => {
+export const addNewCategory = createAsyncThunk('categories/addNewCategory', async category => {
   // This will be replaced with actual API call
   return category;
 });
 
-export const updateCategory = createAsyncThunk('categories/updateCategory', async (category) => {
+export const updateCategory = createAsyncThunk('categories/updateCategory', async category => {
   // This will be replaced with actual API call
   return category;
 });
 
-export const deleteCategory = createAsyncThunk('categories/deleteCategory', async (categoryId) => {
+export const deleteCategory = createAsyncThunk('categories/deleteCategory', async categoryId => {
   // This will be replaced with actual API call
   return categoryId;
 });
@@ -35,7 +35,11 @@ const categoriesSlice = createSlice({
   reducers: {
     // Local actions that don't require API calls
     addCategory: (state, action) => {
-      state.categories.push(action.payload);
+      // Check if category with this ID already exists
+      const exists = state.categories.some(category => category.id === action.payload.id);
+      if (!exists) {
+        state.categories.push(action.payload);
+      }
     },
     removeCategory: (state, action) => {
       state.categories = state.categories.filter(category => category.id !== action.payload);
@@ -48,10 +52,10 @@ const categoriesSlice = createSlice({
       }
     },
   },
-  extraReducers: (builder) => {
+  extraReducers: builder => {
     builder
       // Fetch categories
-      .addCase(fetchCategories.pending, (state) => {
+      .addCase(fetchCategories.pending, state => {
         state.status = 'loading';
       })
       .addCase(fetchCategories.fulfilled, (state, action) => {
@@ -64,7 +68,11 @@ const categoriesSlice = createSlice({
       })
       // Add new category
       .addCase(addNewCategory.fulfilled, (state, action) => {
-        state.categories.push(action.payload);
+        // Check if category with this ID already exists
+        const exists = state.categories.some(category => category.id === action.payload.id);
+        if (!exists) {
+          state.categories.push(action.payload);
+        }
       })
       // Update category
       .addCase(updateCategory.fulfilled, (state, action) => {
@@ -77,6 +85,13 @@ const categoriesSlice = createSlice({
       // Delete category
       .addCase(deleteCategory.fulfilled, (state, action) => {
         state.categories = state.categories.filter(category => category.id !== action.payload);
+      })
+      // Reset app
+      .addCase('RESET_APP', state => {
+        // Reset to initial state
+        state.categories = [];
+        state.status = 'idle';
+        state.error = null;
       });
   },
 });
@@ -85,11 +100,11 @@ const categoriesSlice = createSlice({
 export const { addCategory, removeCategory, updateCategoryDetails } = categoriesSlice.actions;
 
 // Export selectors
-export const selectAllCategories = (state) => state.categories.categories;
-export const selectCategoryById = (state, categoryId) => 
+export const selectAllCategories = state => state.categories.categories;
+export const selectCategoryById = (state, categoryId) =>
   state.categories.categories.find(category => category.id === categoryId);
-export const selectCategoriesStatus = (state) => state.categories.status;
-export const selectCategoriesError = (state) => state.categories.error;
+export const selectCategoriesStatus = state => state.categories.status;
+export const selectCategoriesError = state => state.categories.error;
 
 // Export reducer
 export default categoriesSlice.reducer;

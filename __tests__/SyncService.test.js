@@ -15,6 +15,7 @@ import syncService from '../src/services/SyncService';
 import networkService from '../src/services/NetworkService';
 import conflictResolutionService from '../src/services/ConflictResolutionService';
 import { addTask, updateTaskDetails } from '../src/redux/slices/tasksSlice';
+import { generateId } from '../src/utils/idGenerator';
 import { selectPendingChanges } from '../src/redux/slices/syncSlice';
 
 // Mock the network service
@@ -256,7 +257,7 @@ describe('ConflictResolutionService', () => {
       addConflict: function (conflict) {
         const conflictWithId = {
           ...conflict,
-          id: Date.now().toString(),
+          id: generateId(),
           status: conflict.strategy === 'manual' ? 'manual' : 'pending',
         };
         this.conflicts.push(conflictWithId);

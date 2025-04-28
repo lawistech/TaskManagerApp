@@ -16,6 +16,41 @@ const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
   whitelist: ['tasks', 'categories'], // only persist these reducers
+  // Add migration to handle potential data issues
+  migrate: state => {
+    // Ensure we have a clean state with no duplicates
+    if (state && state.tasks && state.tasks.tasks) {
+      // Remove duplicates by ID
+      const uniqueTasks = [];
+      const taskIds = new Set();
+
+      state.tasks.tasks.forEach(task => {
+        if (!taskIds.has(task.id)) {
+          taskIds.add(task.id);
+          uniqueTasks.push(task);
+        }
+      });
+
+      state.tasks.tasks = uniqueTasks;
+    }
+
+    if (state && state.categories && state.categories.categories) {
+      // Remove duplicates by ID
+      const uniqueCategories = [];
+      const categoryIds = new Set();
+
+      state.categories.categories.forEach(category => {
+        if (!categoryIds.has(category.id)) {
+          categoryIds.add(category.id);
+          uniqueCategories.push(category);
+        }
+      });
+
+      state.categories.categories = uniqueCategories;
+    }
+
+    return Promise.resolve(state);
+  },
 };
 
 const rootReducer = combineReducers({

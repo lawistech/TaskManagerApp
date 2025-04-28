@@ -1,4 +1,5 @@
 import { store } from '../redux/store';
+import { generateId } from '../utils/idGenerator';
 
 /**
  * Service for handling data conflicts during synchronization
@@ -23,7 +24,7 @@ class ConflictResolutionService {
     // Add unique ID to conflict
     const conflictWithId = {
       ...conflict,
-      id: Date.now().toString(),
+      id: generateId(),
       status: conflict.strategy === 'manual' ? 'manual' : 'pending', // 'pending' | 'resolved' | 'manual'
     };
 

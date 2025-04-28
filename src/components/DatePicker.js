@@ -91,12 +91,17 @@ const DatePicker = ({ visible, onDismiss, onDateSelect, initialDate = null }) =>
 
     // Group days into weeks
     const weeks = [];
+    let weekIndex = 0;
     while (days.length) {
+      const weekDays = days.splice(0, 7);
       weeks.push(
-        <View key={`week-${weeks.length}`} style={styles.weekRow}>
-          {days.splice(0, 7)}
+        <View key={`week-${weekIndex}`} style={styles.weekRow}>
+          {weekDays.map((day, dayIndex) => (
+            <React.Fragment key={`day-${weekIndex}-${dayIndex}`}>{day}</React.Fragment>
+          ))}
         </View>,
       );
+      weekIndex++;
     }
 
     return weeks;
