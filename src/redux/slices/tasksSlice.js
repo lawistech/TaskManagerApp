@@ -38,7 +38,8 @@ const tasksSlice = createSlice({
       // Check if task with this ID already exists
       const exists = state.tasks.some(task => task.id === action.payload.id);
       if (!exists) {
-        state.tasks.push(action.payload);
+        // Add new task to the beginning of the array so it appears at the top of the list
+        state.tasks.unshift(action.payload);
       }
     },
     removeTask: (state, action) => {
@@ -77,7 +78,8 @@ const tasksSlice = createSlice({
         // Check if task with this ID already exists
         const exists = state.tasks.some(task => task.id === action.payload.id);
         if (!exists) {
-          state.tasks.push(action.payload);
+          // Add new task to the beginning of the array so it appears at the top of the list
+          state.tasks.unshift(action.payload);
         }
       })
       // Update task
