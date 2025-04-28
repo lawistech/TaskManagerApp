@@ -8,24 +8,23 @@ export default {
   splash: {
     image: './assets/splash.png',
     resizeMode: 'contain',
-    backgroundColor: '#ffffff'
+    backgroundColor: '#ffffff',
   },
-  assetBundlePatterns: [
-    '**/*'
-  ],
+  assetBundlePatterns: ['**/*'],
   ios: {
-    supportsTablet: true
+    supportsTablet: true,
   },
   android: {
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
-      backgroundColor: '#ffffff'
-    }
+      backgroundColor: '#ffffff',
+    },
   },
   web: {
-    favicon: './assets/favicon.png'
+    favicon: './assets/favicon.png',
   },
   plugins: [
-    'react-native-reanimated'
-  ]
+    // Temporarily commenting out to fix startup issue
+    // 'react-native-reanimated'
+  ],
 };
