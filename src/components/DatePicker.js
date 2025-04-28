@@ -12,6 +12,7 @@ import {
   isToday,
   isSameDay,
 } from 'date-fns';
+import { serializeDate } from '../utils/dateUtils';
 
 const DatePicker = ({ visible, onDismiss, onDateSelect, initialDate = null }) => {
   const [selectedDate, setSelectedDate] = useState(initialDate);
@@ -73,7 +74,7 @@ const DatePicker = ({ visible, onDismiss, onDateSelect, initialDate = null }) =>
           ]}
           onPress={() => {
             setSelectedDate(day);
-            onDateSelect(day);
+            onDateSelect(serializeDate(day));
           }}
         >
           <Text
@@ -130,7 +131,7 @@ const DatePicker = ({ visible, onDismiss, onDateSelect, initialDate = null }) =>
               mode="text"
               onPress={() => {
                 setSelectedDate(null);
-                onDateSelect(null);
+                onDateSelect(serializeDate(null));
               }}
             >
               Clear
@@ -142,7 +143,7 @@ const DatePicker = ({ visible, onDismiss, onDateSelect, initialDate = null }) =>
               <Button
                 mode="contained"
                 onPress={() => {
-                  onDateSelect(selectedDate);
+                  onDateSelect(serializeDate(selectedDate));
                   onDismiss();
                 }}
                 style={styles.doneButton}

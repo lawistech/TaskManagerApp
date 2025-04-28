@@ -5,6 +5,7 @@ import { Formik } from 'formik';
 import * as Yup from 'yup';
 import { format } from 'date-fns';
 import DatePicker from './DatePicker';
+import { parseDate } from '../utils/dateUtils';
 
 const TaskSchema = Yup.object().shape({
   title: Yup.string().required('Title is required'),
@@ -68,7 +69,7 @@ const TaskForm = ({ initialValues, onSubmit, categories = [] }) => {
                 style={styles.menuButton}
                 icon="calendar"
               >
-                {values.dueDate ? format(new Date(values.dueDate), 'MMM d, yyyy') : 'Select Date'}
+                {values.dueDate ? format(parseDate(values.dueDate), 'MMM d, yyyy') : 'Select Date'}
               </Button>
 
               <DatePicker
@@ -78,7 +79,7 @@ const TaskForm = ({ initialValues, onSubmit, categories = [] }) => {
                   setFieldValue('dueDate', date);
                   setDateMenuVisible(false);
                 }}
-                initialDate={values.dueDate ? new Date(values.dueDate) : null}
+                initialDate={values.dueDate ? parseDate(values.dueDate) : null}
               />
             </View>
 

@@ -67,7 +67,23 @@ export const store = configureStore({
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
+        ignoredActions: [
+          'persist/PERSIST',
+          'persist/REHYDRATE',
+          'tasks/addTask',
+          'tasks/addNewTask/pending',
+          'tasks/addNewTask/fulfilled',
+          'tasks/updateTaskDetails',
+          'tasks/updateTask/pending',
+          'tasks/updateTask/fulfilled',
+          'sync/incrementPendingChanges',
+        ],
+        // Ignore these specific paths in the state where we know dates might be stored
+        ignoredPaths: [
+          'tasks.tasks.*.dueDate',
+          'tasks.tasks.*.createdAt',
+          'tasks.tasks.*.updatedAt',
+        ],
       },
     }).concat(syncMiddleware),
 });

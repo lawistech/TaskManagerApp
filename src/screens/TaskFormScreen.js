@@ -3,6 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { Text, Appbar, Snackbar } from 'react-native-paper';
 import { useSelector, useDispatch } from 'react-redux';
 import { generateId } from '../utils/idGenerator';
+import { ensureSerializedTaskDates } from '../utils/dateUtils';
 
 import TaskForm from '../components/TaskForm';
 import { addTask, updateTaskDetails } from '../redux/slices/tasksSlice';
@@ -26,21 +27,21 @@ const TaskFormScreen = ({ navigation, route }) => {
 
     try {
       if (task) {
-        // Add updatedAt timestamp for existing tasks
-        dispatch(
-          updateTaskDetails({
-            id: task.id,
-            ...values,
-            updatedAt: new Date().toISOString(),
-          }),
-        );
+        // Add updatedAt timestamp for existing tasks and ensure dates are serialized
+        const updatedTask = ensureSerializedTaskDates({
+          id: task.id,
+          ...values,
+          updatedAt: new Date(),
+        });
+        dispatch(updateTaskDetails(updatedTask));
       } else {
-        const newTask = {
+        // Create new task with serialized dates
+        const newTask = ensureSerializedTaskDates({
           id: generateId(),
           completed: false,
-          createdAt: new Date().toISOString(),
+          createdAt: new Date(),
           ...values,
-        };
+        });
         dispatch(addTask(newTask));
       }
 
