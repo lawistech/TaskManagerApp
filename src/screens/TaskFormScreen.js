@@ -13,6 +13,7 @@ const TaskFormScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
   const categories = useSelector(selectAllCategories);
   const task = route.params?.task;
+  const initialDate = route.params?.initialDate;
   const [errorVisible, setErrorVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const isSubmittingRef = useRef(false);
@@ -65,7 +66,11 @@ const TaskFormScreen = ({ navigation, route }) => {
         <Appbar.Content title={task ? 'Edit Task' : 'Create Task'} />
       </Appbar.Header>
 
-      <TaskForm initialValues={task} onSubmit={handleSubmit} categories={categories} />
+      <TaskForm
+        initialValues={task || (initialDate ? { dueDate: initialDate } : undefined)}
+        onSubmit={handleSubmit}
+        categories={categories}
+      />
 
       <Snackbar
         visible={errorVisible}

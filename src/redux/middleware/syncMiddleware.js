@@ -1,5 +1,6 @@
 import syncService from '../../services/SyncService';
 import { incrementPendingChanges } from '../slices/syncSlice';
+import { createDeltaOperation } from '../../utils/deltaSync';
 
 // Actions that should trigger sync
 const SYNC_ACTIONS = [
@@ -8,7 +9,7 @@ const SYNC_ACTIONS = [
   'tasks/removeTask',
   'tasks/toggleTaskCompletion',
   'tasks/updateTaskDetails',
-  
+
   // Category actions
   'categories/addCategory',
   'categories/removeCategory',
@@ -21,15 +22,15 @@ const SYNC_ACTIONS = [
 const syncMiddleware = store => next => action => {
   // Process the action first
   const result = next(action);
-  
+
   // Check if this action should trigger a sync
   if (SYNC_ACTIONS.includes(action.type)) {
     // Extract entity type and operation type from action
     let entityType, operationType, data;
-    
+
     if (action.type.startsWith('tasks/')) {
       entityType = 'task';
-      
+
       if (action.type === 'tasks/addTask') {
         operationType = 'create';
         data = action.payload;
@@ -48,7 +49,7 @@ const syncMiddleware = store => next => action => {
       }
     } else if (action.type.startsWith('categories/')) {
       entityType = 'category';
-      
+
       if (action.type === 'categories/addCategory') {
         operationType = 'create';
         data = action.payload;
@@ -60,20 +61,22 @@ const syncMiddleware = store => next => action => {
         data = action.payload;
       }
     }
-    
+
     // Add to sync queue if we have all the required data
     if (entityType && operationType && data) {
+      // For update operations, we can use delta sync
+      // For create and delete operations, we need to send the full data
       syncService.addToSyncQueue({
         type: operationType,
         entityType,
-        data
+        data,
       });
-      
+
       // Update the pending changes count
       store.dispatch(incrementPendingChanges());
     }
   }
-  
+
   return result;
 };
 

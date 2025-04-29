@@ -21,9 +21,28 @@ import {
   selectConnectionType,
   selectAllConflicts,
 } from '../redux/slices/syncSlice';
+import syncService from '../services/SyncService';
 import useSyncStatus from '../hooks/useSyncStatus';
 import useConflictResolution from '../hooks/useConflictResolution';
 import SyncStatusIndicator from '../components/SyncStatusIndicator';
+
+/**
+ * Format bytes to a human-readable format
+ * @param {number} bytes - Number of bytes
+ * @param {number} decimals - Number of decimal places
+ * @returns {string} - Formatted string
+ */
+const formatBytes = (bytes, decimals = 2) => {
+  if (bytes === 0) return '0 Bytes';
+
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+};
 
 const SyncScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -135,6 +154,10 @@ const SyncScreen = ({ navigation }) => {
             <View style={styles.statusRow}>
               <Text>Network:</Text>
               <Text>{isOnline ? `Online (${connectionType})` : 'Offline'}</Text>
+            </View>
+            <View style={styles.statusRow}>
+              <Text>Data Saved:</Text>
+              <Text>{formatBytes(syncService.syncStatus.dataSaved)}</Text>
             </View>
           </Card.Content>
           <Card.Actions>

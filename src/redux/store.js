@@ -2,6 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import { persistStore, persistReducer } from 'redux-persist';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { combineReducers } from 'redux';
+import { CURRENT_SCHEMA_VERSION } from '../constants/schemaVersions';
 
 // Import reducers
 import tasksReducer from './slices/tasksSlice';
@@ -18,6 +19,9 @@ const persistConfig = {
   whitelist: ['tasks', 'categories'], // only persist these reducers
   // Add migration to handle potential data issues
   migrate: state => {
+    // Store the current schema version
+    AsyncStorage.setItem('schemaVersion', CURRENT_SCHEMA_VERSION);
+
     // Ensure we have a clean state with no duplicates
     if (state && state.tasks && state.tasks.tasks) {
       // Remove duplicates by ID
@@ -51,6 +55,7 @@ const persistConfig = {
 
     return Promise.resolve(state);
   },
+  version: 1, // Increment this when the schema changes
 };
 
 const rootReducer = combineReducers({

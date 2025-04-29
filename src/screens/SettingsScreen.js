@@ -1,11 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Text, List, Switch, Divider, Appbar, Button } from 'react-native-paper';
+import {
+  Text,
+  List,
+  Switch,
+  Divider,
+  Appbar,
+  Button,
+  Dialog,
+  Portal,
+  Paragraph,
+} from 'react-native-paper';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectPendingChanges, selectIsOnline, updateSyncStatus } from '../redux/slices/syncSlice';
 import SyncStatusIndicator from '../components/SyncStatusIndicator';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { resetStore } from '../utils/resetStore';
+import { repairAllData } from '../utils/dataRepair';
+import { backupAndShare, restoreFromBackup } from '../utils/backupRestore';
 
 const SettingsScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -14,6 +26,15 @@ const SettingsScreen = ({ navigation }) => {
   const [syncOnCellular, setSyncOnCellular] = useState(false);
   const pendingChanges = useSelector(selectPendingChanges);
   const isOnline = useSelector(selectIsOnline);
+
+  // State for data repair dialog
+  const [repairDialogVisible, setRepairDialogVisible] = useState(false);
+  const [repairResults, setRepairResults] = useState(null);
+  const [repairing, setRepairing] = useState(false);
+
+  // State for backup/restore operations
+  const [backingUp, setBackingUp] = useState(false);
+  const [restoring, setRestoring] = useState(false);
 
   // Load settings from AsyncStorage on component mount
   useEffect(() => {
@@ -136,6 +157,90 @@ const SettingsScreen = ({ navigation }) => {
     );
   };
 
+  const handleRepairData = async () => {
+    setRepairing(true);
+    setRepairDialogVisible(true);
+
+    try {
+      // Run the data repair utility
+      const results = await repairAllData();
+      setRepairResults(results);
+
+      // If no issues were found, show a simple alert instead of the detailed dialog
+      if (results.totalRepaired === 0) {
+        setRepairDialogVisible(false);
+        Alert.alert('Data Check Complete', 'No data issues were found. Your data is healthy!');
+      }
+    } catch (error) {
+      console.error('Error repairing data:', error);
+      setRepairDialogVisible(false);
+      Alert.alert('Error', 'Failed to repair data. Please try again or reset the application.');
+    } finally {
+      setRepairing(false);
+    }
+  };
+
+  const handleBackup = async () => {
+    try {
+      setBackingUp(true);
+      await backupAndShare();
+      Alert.alert('Backup Complete', 'Your data has been backed up successfully.');
+    } catch (error) {
+      console.error('Error creating backup:', error);
+      Alert.alert('Backup Failed', error.message || 'Failed to create backup.');
+    } finally {
+      setBackingUp(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    Alert.alert(
+      'Restore from Backup',
+      'This will replace all your current data with the data from the backup file. Continue?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Restore',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setRestoring(true);
+              const result = await restoreFromBackup();
+
+              if (result.success) {
+                Alert.alert(
+                  'Restore Complete',
+                  `Successfully restored ${result.itemsRestored} items from backup created on ${new Date(result.timestamp).toLocaleString()}.`,
+                  [
+                    {
+                      text: 'OK',
+                      onPress: () => {
+                        // Force a reload of the app
+                        navigation.reset({
+                          index: 0,
+                          routes: [{ name: 'Home' }],
+                        });
+                      },
+                    },
+                  ],
+                );
+              }
+            } catch (error) {
+              console.error('Error restoring from backup:', error);
+              Alert.alert('Restore Failed', error.message || 'Failed to restore from backup.');
+            } finally {
+              setRestoring(false);
+            }
+          },
+        },
+      ],
+      { cancelable: true },
+    );
+  };
+
   return (
     <View style={styles.container}>
       <Appbar.Header>
@@ -176,14 +281,33 @@ const SettingsScreen = ({ navigation }) => {
               <Switch value={syncOnCellular} onValueChange={handleSyncOnCellularChange} />
             )}
           />
+
+          <List.Subheader>Backup & Restore</List.Subheader>
+          <List.Item
+            title="Backup Data"
+            description="Create and share a backup of your data"
+            onPress={handleBackup}
+          />
+          <List.Item
+            title="Restore from Backup"
+            description="Restore your data from a backup file"
+            onPress={handleRestore}
+          />
+
+          <List.Subheader>Data Management</List.Subheader>
           <List.Item
             title="Clear Local Data"
             description="Remove all data stored on this device"
             onPress={handleClearData}
           />
           <List.Item
-            title="Fix Data Issues"
-            description="Reset application data to fix corruption issues"
+            title="Repair Data"
+            description="Scan and fix data corruption issues"
+            onPress={handleRepairData}
+          />
+          <List.Item
+            title="Reset Application"
+            description="Reset application data to fix severe corruption issues"
             onPress={handleResetStore}
           />
           <Divider />
@@ -205,6 +329,55 @@ const SettingsScreen = ({ navigation }) => {
           <Text style={styles.versionText}>Version 1.0.0</Text>
         </View>
       </ScrollView>
+
+      {/* Data Repair Dialog */}
+      <Portal>
+        <Dialog visible={repairDialogVisible} onDismiss={() => setRepairDialogVisible(false)}>
+          <Dialog.Title>Data Repair Results</Dialog.Title>
+          <Dialog.Content>
+            {repairing ? (
+              <View style={styles.loadingContainer}>
+                <Text>Scanning and repairing data...</Text>
+              </View>
+            ) : repairResults ? (
+              <ScrollView style={styles.resultsContainer}>
+                <Paragraph>
+                  Scanned {repairResults.tasks.total} tasks and {repairResults.categories.total}{' '}
+                  categories.
+                </Paragraph>
+                <Paragraph>Fixed {repairResults.totalRepaired} issues.</Paragraph>
+
+                {repairResults.tasks.issues.length > 0 && (
+                  <View style={styles.issuesContainer}>
+                    <Text style={styles.issueHeader}>Task Issues:</Text>
+                    {repairResults.tasks.issues.map((issue, index) => (
+                      <Text key={index} style={styles.issueItem}>
+                        • {issue.issue} (ID: {issue.id.substring(0, 8)}...)
+                      </Text>
+                    ))}
+                  </View>
+                )}
+
+                {repairResults.categories.issues.length > 0 && (
+                  <View style={styles.issuesContainer}>
+                    <Text style={styles.issueHeader}>Category Issues:</Text>
+                    {repairResults.categories.issues.map((issue, index) => (
+                      <Text key={index} style={styles.issueItem}>
+                        • {issue.issue} (ID: {issue.id.substring(0, 8)}...)
+                      </Text>
+                    ))}
+                  </View>
+                )}
+              </ScrollView>
+            ) : (
+              <Paragraph>No repair results available.</Paragraph>
+            )}
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setRepairDialogVisible(false)}>Close</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 };
@@ -225,6 +398,25 @@ const styles = StyleSheet.create({
   },
   versionText: {
     color: 'gray',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    padding: 20,
+  },
+  resultsContainer: {
+    maxHeight: 300,
+  },
+  issuesContainer: {
+    marginTop: 10,
+  },
+  issueHeader: {
+    fontWeight: 'bold',
+    marginTop: 10,
+    marginBottom: 5,
+  },
+  issueItem: {
+    marginLeft: 10,
+    marginBottom: 3,
   },
 });
 

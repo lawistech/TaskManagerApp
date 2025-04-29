@@ -8,6 +8,7 @@ import AppNavigator from './src/navigation/AppNavigator';
 import networkService from './src/services/NetworkService';
 import syncService from './src/services/SyncService';
 import { updateNetworkStatus } from './src/redux/slices/syncSlice';
+import { checkForMigration } from './src/utils/schemaMigration';
 
 // Initialize services
 const initializeServices = () => {
@@ -36,8 +37,20 @@ const initializeServices = () => {
 
 const AppContent = () => {
   useEffect(() => {
-    const cleanup = initializeServices();
-    return cleanup;
+    const initialize = async () => {
+      // Check for schema migrations
+      await checkForMigration();
+
+      // Initialize services
+      const cleanup = initializeServices();
+      return cleanup;
+    };
+
+    initialize();
+
+    return () => {
+      // Cleanup will be handled by initializeServices
+    };
   }, []);
 
   return (
