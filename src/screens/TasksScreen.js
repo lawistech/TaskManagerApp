@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Appbar, FAB } from 'react-native-paper';
 import { useSelector, useDispatch } from 'react-redux';
@@ -11,6 +11,7 @@ const TasksScreen = ({ navigation }) => {
   const dispatch = useDispatch();
   const tasks = useSelector(selectAllTasks);
   const categories = useSelector(selectAllCategories);
+  const taskListRef = useRef(null);
 
   const handleTaskPress = task => {
     navigation.navigate('TaskDetail', { taskId: task.id });
@@ -24,15 +25,23 @@ const TasksScreen = ({ navigation }) => {
     navigation.navigate('TaskForm');
   };
 
+  const handleFilterPress = () => {
+    // Call the showFilterMenu method on the TaskList component
+    if (taskListRef.current) {
+      taskListRef.current.showFilterMenu();
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Appbar.Header>
         <Appbar.Content title="Tasks" />
-        <Appbar.Action icon="filter" onPress={() => {}} />
+        <Appbar.Action icon="filter" onPress={handleFilterPress} />
         <Appbar.Action icon="dots-vertical" onPress={() => {}} />
       </Appbar.Header>
 
       <TaskList
+        ref={taskListRef}
         tasks={tasks}
         categories={categories}
         onTaskPress={handleTaskPress}
